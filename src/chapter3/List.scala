@@ -12,9 +12,23 @@ object List {
   def apply[A](a: A*): List[A] = 
       if(a.isEmpty) Nil else Cons(a.head, apply(a.tail : _*))
       
+  /**
+   *    
+   */
+  def empty[A]: List[A] = Nil
       
   /**
    * 
    */
-  def sum(list: List[Int]): Int = ???
+  def foldRight[A, B](l: List[A], b: B)(f: (A, B) => B) : B = l match {
+      case Nil   => b
+      case Cons(h, t) => f(h, foldRight(t, b)(f))
+  }  
+  
+  
+  /**
+   * 
+   */
+  def sum(l: List[Int]): Int = ???
+  
 }
