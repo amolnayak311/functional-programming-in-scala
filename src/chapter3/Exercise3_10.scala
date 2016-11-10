@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 object Exercise3_10 {
   
-  //Implement foldLeft taht is tail recursive
+  //Implement foldLeft which is tail recursive
   
   /**
    * 
