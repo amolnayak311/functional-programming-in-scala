@@ -1,7 +1,7 @@
 package chapter5
 
-import Stream.cons
-// Implementation of Exercise 5.1, 5.2, 5.3, 5,4
+import Stream.{cons, empty}
+// Implementation of Exercise 5.1, 5.2, 5.3, 5,4, 5.5
 sealed trait Stream[+A] {
   
     /**
@@ -49,7 +49,54 @@ sealed trait Stream[+A] {
       case _ => false
     }
     
+    /**
+     * 
+     */
+    def foldRight[B](z: => B)(f: (A, => B) => B): B = this match {
+      case Cons(h, t) => f(h(), t().foldRight(z)(f))
+      case _ => z
+    }
     
+    /**
+     * 
+     */
+    def takeWhile1(f: A => Boolean): Stream[A] = 
+      foldRight(empty[A]){ case (a, b) => if (f(a)) cons(a, b) else empty}
+    
+    /**
+     * 
+     */
+    def headOption: Option[A] = 
+      foldRight(None: Option[A]){case (a, _) => Some(a)}
+    
+    
+    
+    /**
+     * 
+     */
+    def map[B](f: A => B): Stream[B] = 
+      foldRight(empty[B]){case (a, b) => cons(f(a), b)}
+    
+    
+    /**
+     * 
+     */
+    def filter(f: A => Boolean): Stream[A] = 
+      foldRight(empty[A]) {case (a, b) => if(f(a)) cons(a, b) else b }
+    
+    
+    /**
+     * 
+     */
+    def append[B >: A](str: => Stream[B]): Stream[B] = 
+      foldRight(str){case (x, y) => cons(x, y)}
+    
+    
+    /**
+     * 
+     */
+    def flatMap[B](f: A => Stream[B]): Stream[B] = ???
+
 }
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -73,6 +120,10 @@ object Stream {
     if(args.isEmpty) Empty else cons(args.head, apply(args.tail:_*))
   }
   
+  /**
+   * 
+   */
+  def empty[B]:Stream[B] = Empty
   
   
 }
@@ -112,6 +163,34 @@ object StreamImpl {
       assert(!str1.forall(_ > 10))
       assert(Empty.forall(x => false))
       assert(Empty.forall(x => true))
+      
+      
+       //takeWhile1 test
+      assert(str1.takeWhile1(_ > 6).toList == Nil)
+      assert(str1.takeWhile1(_ < 6).toList == str1.toList)
+      assert(str1.takeWhile1(_ < 3).toList == List(1, 2))
+      
+      
+      //headOption using foldRight
+      assert(str1.headOption == Some(1))
+      assert(Empty.headOption == None)
+      
+      
+      //map operation
+      assert(str1.map(x => x * x).toList == List(1, 4, 9, 16))
+      assert(str1.map(_.toString).toList == List("1", "2", "3", "4"))
+      assert(Empty.map(_.toString).toList == Nil)
+      
+      //Filter Operation
+      assert(str1.filter(_ % 2 == 0).toList == List(2, 4))
+      assert(str1.filter(_ > 3).toList == List(4))
+      assert(str1.filter(_ > 4).toList == Nil)
+      assert(empty[Int].filter(_ > 4).toList == Nil)
+      
+      //append
+      assert(str1.append(Stream(5, 6, 7)).toList == List(1, 2, 3, 4, 5, 6, 7))
+      assert(str1.append(empty).toList == List(1, 2, 3, 4))
+      assert(empty.append(str1).toList == List(1, 2, 3, 4))
       
       
       println("All tests successful")
