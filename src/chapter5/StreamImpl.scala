@@ -93,9 +93,10 @@ sealed trait Stream[+A] {
     
     
     /**
-     * 
+     *  
      */
-    def flatMap[B](f: A => Stream[B]): Stream[B] = ???
+    def flatMap[B](f: A => Stream[B]): Stream[B] = 
+      foldRight(empty[B]){case (a, b) => f(a).append(b)} 
 
 }
 case object Empty extends Stream[Nothing]
@@ -191,6 +192,10 @@ object StreamImpl {
       assert(str1.append(Stream(5, 6, 7)).toList == List(1, 2, 3, 4, 5, 6, 7))
       assert(str1.append(empty).toList == List(1, 2, 3, 4))
       assert(empty.append(str1).toList == List(1, 2, 3, 4))
+      
+      //flatMap test
+      assert(str1.flatMap(x => Stream(x.toString)).toList == List("1", "2", "3", "4"))
+      assert(Empty.flatMap(x => Stream(x.toString)).toList == Nil)
       
       
       println("All tests successful")
