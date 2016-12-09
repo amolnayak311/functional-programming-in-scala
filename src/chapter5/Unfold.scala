@@ -3,7 +3,7 @@ package chapter5
 import chapter5.Stream._
 object Unfold {
   
-  //Implement Exercise 5.11, 5.12, 5.13, 5.14
+  //Implement Exercise 5.11, 5.12, 5.13, 5.14, 5.15
   
   /**
    * 
@@ -86,6 +86,13 @@ object Unfold {
   }
   
   
+  def tails[A](s: Stream[A]): Stream[Stream[A]] = unfold(s) { x => x match {
+      case Empty => None
+      case Cons(h, t) => Some((x, t()))
+    }
+  } append Empty
+  
+  
   
   /**
    * 
@@ -128,7 +135,7 @@ object Unfold {
     assert(startsWith(Stream(1, 2), Empty))
     assert(startsWith(Stream(1, 2), Stream(1, 2)))
     assert(startsWith(Empty, Empty))
-    
+    assert(tails(Stream(1, 2, 3)).map(_.toList).toList == List(List(1, 2, 3), List(2, 3), List(3)))
     println("All tests successful")
   }
 }
