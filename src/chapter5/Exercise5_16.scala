@@ -7,7 +7,7 @@ object Exercise5_16 {
   
   
   /**
-   * 
+   * Use fold right and preserve intermediate results
    */
   def scanRight[A, B](str: Stream[A], z: => B)(f : (A, => B) => B): Stream[B] = 
     str.foldRight(z, Stream(z)){
