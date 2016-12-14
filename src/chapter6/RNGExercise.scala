@@ -1,14 +1,17 @@
 package chapter6
 
+import scala.collection.mutable.ListBuffer
+
 trait RNG {
   /**
    * 
    */
-  def nextInt: (Int, RNG)
+  def nextInt: (Int, RNG)  
+  
 }
 
 /**
- * Exercise 6.1
+ * Exercise 6.1, 6.2, 6.3
  */
 
 case class SimpleRNG(seed: Long) extends RNG {  
@@ -24,18 +27,60 @@ case class SimpleRNG(seed: Long) extends RNG {
     /**
      * 
      */
-    def nonNegativeInt: (Int, RNG) = {
-      val (next, nextState) = nextInt
+    def nonNegativeInt(cState:RNG): (Int, RNG) = {
+      val (next, nextState) = cState.nextInt
       (if (next < 0) -(next + 1) else next, nextState)
     }
     
     /**
      * 
      */
-    def double: (Double, RNG) = {
-      val (next, nextState) = nonNegativeInt
+    def double(cState: RNG): (Double, RNG) = {
+      val (next, nextState) = nonNegativeInt(cState)
       (next.toDouble / Int.MaxValue, nextState)
     }
+    
+    /**
+     * 
+     */
+    def intDouble(cState: RNG): ((Int, Double), RNG) = {
+      val (nInt, nState) = cState.nextInt
+      val (nDouble,  nnState) = double(nState)
+      ((nInt, nDouble), nnState)
+    }
+    
+    /**
+     * 
+     */
+    def doubleInt(cState: RNG): ((Double, Int), RNG) = {
+      val ((in, dou), nState) = intDouble(cState)
+      ((dou, in), nState)
+    }
+    
+    
+    /**
+     * 
+     */
+    def double3(cState: RNG): ((Double, Double, Double), RNG) = {
+      val (d1, rng1) = double(cState)
+      val (d2, rng2) = double(rng1)
+      val (d3, rng3) = double(rng2)
+      ((d1, d2, d3), rng3)
+    }
+    
+    /**
+     * 
+     */
+    def ints(count:Int)(rng: RNG):(List[Int], RNG) = { 
+      val (res, nextState) = Stream.from(1).takeWhile(_ <= count).foldLeft((ListBuffer.empty[Int], rng)) {
+        case ((accValues, cRng), _) => {
+          val (intVal, nRNG) = cRng.nextInt
+          (accValues += intVal, nRNG)
+        }
+      }
+      (res.toList, nextState)
+    }
+    
   
 }
 
@@ -45,9 +90,19 @@ object RNGExercise {
   def main(args: Array[String]): Unit = {
     val r = SimpleRNG(Long.MaxValue)
     val (next, _) = r.nextInt    
-    assert(r.nonNegativeInt._1 == -(next + 1))
-    assert(r.double._1 <= 1)
-    assert(r.double._1 == - (next + 1).toDouble / Int.MaxValue)
+    assert(r.nonNegativeInt(r)._1 == -(next + 1))
+    assert(r.double(r)._1 <= 1)
+    assert(r.double(r)._1 == - (next + 1).toDouble / Int.MaxValue)
+    val (expectedDouble, _) = r.double(r.double(r)._2)    
+    assert(r.intDouble(r)._1 == (next, expectedDouble))
+    assert(r.doubleInt(r)._1 == (expectedDouble, next))
+    
+    val (v1, r1) = r.nextInt
+    val (v2, r2) = r1.nextInt
+    val (v3, r3) = r2.nextInt
+    assert(r.ints(3)(r) == (List(v1, v2, v3), r3))
+    
     println("All tests successful")
+    
   }
 }
