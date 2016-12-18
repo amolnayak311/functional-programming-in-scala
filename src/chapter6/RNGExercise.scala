@@ -11,7 +11,7 @@ trait RNG {
 }
 
 /**
- * Exercise 6.1, 6.2, 6.3, 6.4, 6.5, 6.6
+ * Exercise 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7
  */
 
 case class SimpleRNG(seed: Long) extends RNG {  
@@ -107,7 +107,17 @@ case class SimpleRNG(seed: Long) extends RNG {
         val (b, rs2) = r2(rs1)
         (f(a, b), rs2)
       }
+     
+    /**
+     * 
+     */
+    def sequence[A](list: List[Rand[A]]): Rand[List[A]] = 
+      list.foldRight(unit(List.empty[A]))(
+          (a, b) => map2(a, b)(_ :: _)
+      )
+    
       
+    
      /**
       * 
       */
@@ -141,6 +151,39 @@ case class SimpleRNG(seed: Long) extends RNG {
        ((d, i), next)
      }
     
+    /**
+     * 
+     */
+    def flatMap[A, B](r : Rand[A])(f: A => Rand[B]): Rand[B] = 
+      x => {
+        val (nR, nRng) = r(x)
+        f(nR)(nRng)        
+      }
+    
+      /**
+       * 0 is not a valid input, this will result in stack overflow
+       */
+    def nonNegativeLessThan(n: Int): Rand[Int] = {
+      flatMap(nonNegativeInt)(        
+        (i) => {
+          val mod = i % n          
+          if(mod < n) unit(mod) else nonNegativeLessThan(n)  
+        }
+      )
+    }
+    
+    
+    /**
+     * 
+     */
+    def mapWithFlatMap[A, B](r: Rand[A])(f: A => B): Rand[B] = 
+      flatMap(r)(a => unit(f(a)))
+      
+    /**
+     * 
+     */
+     def map2ByFlatMap[A, B, C](r1: Rand[A], r2: Rand[B])(f :(A, B) => C): Rand[C] = 
+       flatMap(r1)(a => map(r2)(b => f(a, b)))
     
 }
 
@@ -166,6 +209,11 @@ object RNGExercise {
     
     assert(r.intDouble(r) == r.randIntDouble(r))
     assert(r.doubleInt(r) == r.randDoubleInt(r))
+    
+    println(r.nonNegativeLessThan(0)(r))
+    
+    assert(r.map2(r.unit(1), r.unit(2))(_ :: _ :: Nil)(r) == r.sequence(List(r.unit(1), r.unit(2)))(r))
+    
     
     println("All tests successful")
     
