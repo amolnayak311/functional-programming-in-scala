@@ -61,7 +61,7 @@ object Par {
     /**
      * 
      */
-    def map2[A,B,C](a: Par[A], b: Par[B], timeout : Long = -1, unit: TimeUnit = TimeUnit.MILLISECONDS)(f: (A,B) => C): Par[C] = 
+    def map2[A,B,C](a: Par[A], b: Par[B], timeout : Long = -1, unit: TimeUnit = TimeUnit.NANOSECONDS)(f: (A,B) => C): Par[C] = 
     es => {
       //Implementation that doesn't honor the timeouts
       val af = a(es)
