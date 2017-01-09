@@ -83,7 +83,8 @@ object Exercise1 {
         
         assert(nums.foldLeft(intAddition.zero)(intAddition.op) == 10)
         assert(nums.foldLeft(intMultiplication.zero)(intMultiplication.op) == 24)
-        assert(booleanVals.foldLeft(intMultiplication.zero)(intMultiplication.op) == 24)
+        assert(!booleanVals.foldLeft(booleanAnd.zero)(booleanAnd.op))
+        assert(booleanVals.foldLeft(booleanOr.zero)(booleanOr.op))
         println("All tests successful")
     }
     
