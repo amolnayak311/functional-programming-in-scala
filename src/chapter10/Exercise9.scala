@@ -1,7 +1,7 @@
 package chapter10
 
 import chapter10.Exercise7.foldMapV
-object Exercise8 {
+object Exercise9 {
   
     def ordered(nums: IndexedSeq[Int]): Boolean = {
       /**
