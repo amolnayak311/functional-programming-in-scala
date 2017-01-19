@@ -14,8 +14,8 @@ object Exercise11 {
         Part("", 0, "")
        else 
         Stub(x.toString)) match {
-      case Stub(_) => 0
-      case Part(_, count, _) => count
+      case Stub(s) => if(s.isEmpty) 0 else 1
+      case Part(l, count, r) => (if(l.isEmpty) 0 else 1) + count + (if(r.isEmpty) 0 else 1)
     }
     
     
