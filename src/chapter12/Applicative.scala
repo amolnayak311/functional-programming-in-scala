@@ -9,7 +9,20 @@ trait Applicative[F[_]] extends Functor[F] {
      */
     def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] = 
       apply(map(fa)(f.curried))(fb)
-    
+ 
+    /**
+     *  map3 using apply
+     */
+      //TODO: Can we implement using map2?
+    def map3[A, B, C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D): F[D] = 
+      apply(apply(apply(unit(f.curried))(fa))(fb))(fc)
+      
+    /**
+     * 
+     */
+    def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
+      apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
+ 
       
     /**
      * Defined in terms of apply and unit
@@ -62,5 +75,40 @@ trait Applicative[F[_]] extends Functor[F] {
     
     
     
-    
+}
+
+
+trait Monad[F[_]] extends Applicative[F] {
+  
+  /**
+   * 
+   */
+  def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B] = join(map(fa)(f))
+  
+  
+  /**
+   * 
+   */
+  def join[A](ffa: F[F[A]]): F[A] = flatMap(ffa)(a => a)
+  
+  
+  /**
+   * 
+   */
+  def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = a => flatMap(f(a))(g)
+  
+  
+  /**
+   * 
+   */
+  override def map[A, B](fa: F[A])(f: A => B): F[B] = flatMap(fa)(a => unit(f(a)))
+  
+
+  /**
+   * 
+   */
+  override def map2[A, B, C](fa: F[A], fb:F[B])(f: (A, B) => C): F[C] = 
+    flatMap(fa)(a => map(fb)(b => f(a, b)))
+  
+  
 }
