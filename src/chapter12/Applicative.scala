@@ -2,6 +2,7 @@ package chapter12
 
 import chapter11.Functor
 
+
 trait Applicative[F[_]] extends Functor[F] {
   
     /**
@@ -109,6 +110,30 @@ trait Monad[F[_]] extends Applicative[F] {
    */
   override def map2[A, B, C](fa: F[A], fb:F[B])(f: (A, B) => C): F[C] = 
     flatMap(fa)(a => map(fb)(b => f(a, b)))
+  
+  
+}
+
+
+object Monad {
+  
+    def eitherMonad[E] : Monad[({type f[x] = Either[E, x]}) #f] = 
+        new Monad[({type f[x] = Either[E, x]}) # f] {
+      
+          /**
+           * 
+           */
+          def unit[A](a : => A): Either[E, A] = Right(a)
+          
+          /**
+           * 
+           */
+          override def flatMap[A, B](fa: Either[E, A])(f: A => Either[E, B]): Either[E, B] = fa match {
+            case Left(b) => Left(b)
+            case Right(x) => f(x)
+          }
+          
+    }
   
   
 }
