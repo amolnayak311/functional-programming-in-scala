@@ -2,6 +2,21 @@ package chapter12
 
 import chapter11.Functor
 
+/**
+ * 
+ */
+sealed trait Validation[+E, +A]
+
+/**
+ * 
+ */
+case class Failure[E](head: E, tail: Vector[E])
+  extends Validation[E, Nothing]
+
+/**
+ * 
+ */
+case class Success[A](a: A) extends Validation[Nothing, A]
 
 trait Applicative[F[_]] extends Functor[F] {
   
@@ -50,6 +65,14 @@ trait Applicative[F[_]] extends Functor[F] {
     
     
     
+    /**
+     * 
+     */
+    def sequenceMap[K,V](ofa: Map[K,F[V]]): F[Map[K,V]] = 
+      ofa.foldLeft(unit(Map.empty[K, V])) {
+        case (acc, (k, v)) => map2(v, acc)((v, map) => map + (k -> v))
+      }
+
     
     
     /**
@@ -75,7 +98,84 @@ trait Applicative[F[_]] extends Functor[F] {
     def product[A, B](fa: F[A], fb: F[B]): F[(A, B)] =  map2(fa, fb)((_, _))
     
     
+    /**
+     * 
+     */
+    def validationApplicative[E]: Applicative[({type f[x] = Validation[E,x]})#f] = 
+      new Applicative[({type f[x] = Validation[E, x]})#f]{
+      
+          /**
+           * 
+           */
+          def unit[A](a: => A): Validation[E, A] = Success(a)
+          
+          /**
+           * 
+           */
+          override def map2[A, B, C](fa: Validation[E, A], fb: Validation[E, B])(f: (A, B) => C) = 
+            (fa, fb) match {
+              case (Success(a), Success(b)) => Success(f(a, b))
+              case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ Vector(h1) ++ t2)
+              case (x@Failure(_, _), _) => x
+              case (_, x@Failure(_, _)) => x
+            }
+      }
     
+    
+      def streamApplicative: Applicative[Stream] = new Applicative[Stream]{
+        
+          /**
+           * 
+           */
+          def unit[A](a: => A): Stream[A] = Stream.continually(a)
+          
+          /**
+           * 
+           */
+          override def map2[A, B, C](sa: Stream[A], sb: Stream[B])(f: (A, B) => C) = 
+            (sa zip sb) map f.tupled
+        
+      }
+      
+      /**
+       * 
+       */
+      def product[G[_]](g: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = {
+        val s = this
+        new Applicative[({type f[x] = (F[x], G[x])})#f] {
+            /**
+         		 * 	
+          	 */
+            def unit[A](a: => A): (F[A], G[A]) = (s.unit(a), g.unit(a))
+            
+            /**
+             * 
+             */
+            override def apply[A,B](fs: (F[A => B], G[A => B]))(p: (F[A], G[A])) = 
+              (s.apply(fs._1)(p._1), g.apply(fs._2)(p._2))
+        }
+        
+      }
+      
+      /**
+       * 
+       */
+      def compose[G[_]](g: Applicative[G]):Applicative[({type f[x] = F[G[x]]})#f] = {
+        val self = this
+        new Applicative[({type f[x] = F[G[x]]})#f] {
+          /**
+           * 
+           */
+          def unit[A](a: => A) = self.unit(g.unit(a))
+          
+          
+          /**
+           * 
+           */
+          override def map2[A,B,C](fga: F[G[A]], fgb: F[G[B]])(f: (A,B) => C): F[G[C]] = 
+            self.map2(fga, fgb)(g.map2(_, _)(f))
+        }
+      }
 }
 
 
@@ -114,6 +214,49 @@ trait Monad[F[_]] extends Applicative[F] {
   
 }
 
+/**
+ * 
+ */
+trait Traverse[F[_]]  { 
+  
+    /**
+   	* 
+   	*/
+    def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
+    
+    
+    /**
+     * 
+     */
+    def sequence[G[_]:Applicative, A](fa: F[G[A]]): G[F[A]] = traverse(fa)(a => a)
+}
+
+object Traverse {
+  
+    def listTraverse: Traverse[List] = new Traverse[List] {
+    
+      /**
+   		 * 
+   		 */
+      override def traverse[G[_], A, B](fa: List[A])(f: A => G[B])(implicit G: Applicative[G]): G[List[B]]  = 
+          fa.foldLeft(G.unit(List.empty[B]))((acc, v) => G.map2(f(v), acc)(_ :: _))
+    }
+    
+    
+    def optionTraverse: Traverse[Option] = new Traverse[Option] {
+      
+      /**
+       * 
+       */
+      override def traverse[G[_], A, B](oa: Option[A])(f: A => G[B])(implicit G: Applicative[G]): G[Option[B]] = 
+        oa match {
+          case Some(a) => G.map(f(a))(Some(_))
+          case None  => G.unit(None)
+        }
+        
+    }
+    
+}
 
 object Monad {
   
@@ -137,3 +280,5 @@ object Monad {
   
   
 }
+
+
